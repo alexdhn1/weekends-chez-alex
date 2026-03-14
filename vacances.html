@@ -227,7 +227,7 @@
       <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> Jenna occupée</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--bleu)"></div> Invités</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--violet)"></div> Vacances ensemble</div>
-      <div class="legend-item"><div class="legend-dot" style="background:var(--jaune)"></div> Pont / opportunité</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--jaune)"></div> Dispo / Pont</div>
     </div>
   </div>
 
@@ -264,7 +264,7 @@
           <option value="Alex">🔴 Alex occupé (déplacement, amis…)</option>
           <option value="Jenna">🟠 Jenna occupée (garde, amis…)</option>
           <option value="Vacances">🟣 Vacances ensemble</option>
-          <option value="Pont">⭐ Pont / fermeture entreprise</option>
+          <option value="Pont">⭐ Dispo / Pont</option>
           <option value="Libre">🟢 On est libres !</option>
         </select>
       </div>
@@ -304,7 +304,7 @@
 // CONFIG — remplace par l'URL /exec de ton Apps Script Vacances
 // ============================================================
 var API = 'https://script.google.com/macros/s/AKfycbzuI-OJ70JgQTEys_BAM-OwMDyIXem9KfOLque8OEdt3lLzfgDhU3mSn6vr5r-DHu_O/exec';
-
+  
 // Ponts entreprise Alex pré-configurés
 var PONTS_ALEX = [
   { dateStart: '2025-05-15', dateEnd: '2025-05-15', note: 'Pont Ascension' },
@@ -429,7 +429,11 @@ function evtClass(e) {
 function evtLabel(e) {
   var icons = { Libre:'🟢', Alex:'🔴', Jenna:'🟠', Invités:'🔵', Vacances:'🟣', Pont:'⭐' };
   var icon = icons[e.categorie] || '';
-  return icon + ' ' + (e.note || e.categorie);
+  var label;
+  if (e.categorie === 'Pont')    label = 'Dispo / Pont' + (e.note ? ' · ' + e.note : '');
+  else if (e.categorie === 'Invités') label = 'Invités' + (e.note ? ' · ' + e.note : '');
+  else label = e.note || e.categorie;
+  return icon + ' ' + label;
 }
 
 function renderCalendar() {
@@ -589,7 +593,7 @@ function renderCreneaux() {
       '</div>' +
       '<div>' +
         (isVac  ? '<span class="creneau-badge badge-vacances">🟣 Vacances prévues</span>' :
-         isPont ? '<span class="creneau-badge badge-pont">⭐ Pont</span>' :
+         isPont ? '<span class="creneau-badge badge-pont">⭐ Dispo / Pont</span>' :
                   '<span class="creneau-badge badge-libre">🟢 Libre</span>') +
       '</div>';
 
