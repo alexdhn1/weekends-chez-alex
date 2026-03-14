@@ -303,8 +303,8 @@
 // ============================================================
 // CONFIG — remplace par l'URL /exec de ton Apps Script Vacances
 // ============================================================
-var API = 'https://script.google.com/macros/s/AKfycbwLn5S-EW6YgNlA_Aqvm-H5O884yMYkIRdUWbwxyaBKWTQPFAFaPuvOmTrXKykem-o/exec';
-  
+var API = 'https://script.google.com/macros/s/AKfycbwSl-VycAZk9-Q_ZOs9Jzo7hHZB_1dARbYF0dmshd52aEBeAqUGF_2FbH6ELy8cHVmF/exec';
+
 // Ponts entreprise Alex pré-configurés
 var PONTS_ALEX = [
   { dateStart: '2025-05-15', dateEnd: '2025-05-15', note: 'Pont Ascension' },
@@ -430,9 +430,15 @@ function evtLabel(e) {
   var icons = { Libre:'🟢', Alex:'🔴', Jenna:'🟠', Invités:'🔵', Vacances:'🟣', Pont:'⭐' };
   var icon = icons[e.categorie] || '';
   var label;
-  if (e.categorie === 'Pont')    label = 'Dispo / Pont' + (e.note ? ' · ' + e.note : '');
-  else if (e.categorie === 'Invités') label = 'Invités' + (e.note ? ' · ' + e.note : '');
-  else label = e.note || e.categorie;
+  if (e.categorie === 'Pont') {
+    label = 'Dispo / Pont' + (e.note ? ' · ' + e.note : '');
+  } else if (e.categorie === 'Invités') {
+    // e.nom = nom de l'invité (champ séparé renvoyé par le backend)
+    // e.note = label du weekend (ex: "28-29 mars 2026") — on l'ignore
+    label = 'Invités' + (e.nom ? ' · ' + e.nom : '');
+  } else {
+    label = e.note || e.categorie;
+  }
   return icon + ' ' + label;
 }
 
