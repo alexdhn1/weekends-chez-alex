@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Weekend à St-Georges-sur-Cher 🍷</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      color: #1a1a1a;
+      position: relative;
+    }
+
+    /* ---- Fond mosaïque ---- */
+    .mosaic-bg {
+      position: fixed; inset: 0; z-index: 0;
+      display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 25vh;
+      filter: blur(3px) brightness(0.38) saturate(0.8); transform: scale(1.05);
+    }
+    .mosaic-bg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mosaic-overlay {
+      position: fixed; inset: 0; z-index: 1;
+      background: linear-gradient(180deg, rgba(10,20,10,0.35) 0%, rgba(10,20,10,0.15) 40%, rgba(10,20,10,0.45) 100%);
+    }
+
+    /* ---- Layout ---- */
+    .page {
+      position: relative; z-index: 2;
+      max-width: 680px; margin: 0 auto;
+      padding: 24px 16px max(48px, env(safe-area-inset-bottom));
+    }
+
+    /* ---- Hero ---- */
+    .hero { text-align: center; padding: 32px 20px 24px; color: #fff; }
+    .hero-emoji { font-size: 52px; display: block; margin-bottom: 12px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5)); }
+    .hero h1 { font-size: 28px; font-weight: 900; text-shadow: 0 2px 12px rgba(0,0,0,0.6); margin-bottom: 8px; line-height: 1.2; }
+    .hero .subtitle { font-size: 15px; opacity: 0.85; font-style: italic; text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
+    .location-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.25); border-radius: 20px;
+      padding: 6px 16px; font-size: 13px; font-weight: 600; color: #fff; margin-top: 12px;
+    }
+
+    /* ---- Carousels ---- */
+    .carousels-section { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .carousel-block {
+      background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; overflow: hidden;
+    }
+    .carousel-label {
+      text-align: center; font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: rgba(255,255,255,0.85); padding: 10px 12px 8px;
+    }
+    .carousel { position: relative; aspect-ratio: 4/3; overflow: hidden; touch-action: pan-y; }
+    .carousel-track { display: flex; height: 100%; transition: transform 0.55s cubic-bezier(0.4,0,0.2,1); }
+    .carousel-track img { flex-shrink: 0; width: 100%; height: 100%; object-fit: cover; -webkit-user-drag: none; pointer-events: none; }
+    .carousel-dots { display: flex; justify-content: center; gap: 5px; padding: 8px 0 6px; flex-wrap: wrap; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.35); cursor: pointer; transition: background 0.3s, transform 0.3s; flex-shrink: 0; }
+    .dot.active { background: #fff; transform: scale(1.35); }
+    .carousel-btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(0,0,0,0.32); border: none; color: #fff;
+      width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+      font-size: 18px; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s; z-index: 3;
+    }
+    .carousel-btn:hover { background: rgba(0,0,0,0.58); }
+    .carousel-btn.prev { left: 6px; }
+    .carousel-btn.next { right: 6px; }
+    .caption {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.6));
+      color: #fff; font-size: 11px; font-weight: 600;
+      padding: 20px 10px 8px; text-align: center; pointer-events: none;
+    }
+
+    /* ---- Card principale ---- */
+    .card {
+      background: rgba(255,255,255,0.96); backdrop-filter: blur(12px);
+      border-radius: 20px; padding: 24px 24px 32px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.32);
+    }
+    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #40916c; margin-bottom: 12px; }
+
+    /* ---- Vibes grid ---- */
+    .vibes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .vibe-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      background: #f8fdf9; border: 1px solid #e8f5e9; border-radius: 10px;
+      padding: 10px 12px; line-height: 1.4; color: #2d4a3e;
+    }
+    .vibe-item .vi { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .vibe-item .vt { font-size: 13px; font-weight: 600; }
+    .vibe-item .vd { font-size: 11.5px; color: #666; margin-top: 1px; }
+    .vibe-item.full { grid-column: 1 / -1; }
+
+    /* ---- Hébergement ---- */
+    .hebergement {
+      background: #fff9f0; border: 1px solid #ffe0b2; border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 20px; font-size: 13.5px; color: #5d4037; line-height: 1.65;
+    }
+    .hebergement strong { color: #e65100; }
+
+    /* ---- Tags ---- */
+    .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 22px; }
+    .tag { display: inline-flex; align-items: center; gap: 4px; padding: 6px 13px; border-radius: 20px; font-size: 12.5px; font-weight: 600; }
+    .tag.green  { background: #e8f5e9; color: #2e7d32; }
+    .tag.blue   { background: #e3f2fd; color: #1565c0; }
+    .tag.purple { background: #f3e5f5; color: #6a1b9a; }
+    .tag.orange { background: #fff3e0; color: #e65100; }
+
+    .divider { height: 1px; background: linear-gradient(to right, transparent, #e0e0e0, transparent); margin: 20px 0; }
+
+    /* ---- Formulaire ---- */
+    .form-section-title { font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 16px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 11.5px; font-weight: 700; color: #555; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.06em; }
+    input[type="text"], input[type="email"], input[type="number"], textarea, select {
+      width: 100%; padding: 13px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px;
+      font-size: 15px; color: #1a1a1a; background: #fafafa;
+      transition: border-color 0.2s, box-shadow 0.2s; outline: none; appearance: none; font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: #40916c; box-shadow: 0 0 0 3px rgba(64,145,108,0.12); background: #fff;
+    }
+    textarea { resize: vertical; min-height: 90px; }
+    .select-wrapper { position: relative; }
+    .select-wrapper::after { content: '▾'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: #888; font-size: 18px; }
+    select { padding-right: 40px; cursor: pointer; }
+    .nb-hint { font-size: 12px; color: #888; margin-top: 4px; }
+
+    button[type="submit"] {
+      width: 100%; padding: 16px;
+      background: linear-gradient(135deg, #2d6a4f, #52b788);
+      color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.2s, transform 0.1s; margin-top: 4px;
+      letter-spacing: 0.01em;
+    }
+    button[type="submit"]:hover  { opacity: 0.91; }
+    button[type="submit"]:active { transform: scale(0.98); }
+    button[type="submit"]:disabled { opacity: 0.48; cursor: not-allowed; }
+
+    .message { display: none; padding: 16px; border-radius: 12px; font-size: 15px; font-weight: 500; margin-top: 16px; text-align: center; line-height: 1.5; }
+    .message.success { background: #e8f5e9; color: #1b5e20; display: block; }
+    .message.error   { background: #fdecea; color: #b71c1c; display: block; }
+
+    .loader { display: none; text-align: center; padding: 28px 0; color: #888; }
+    .loader.visible { display: block; }
+    .spinner { display: inline-block; width: 26px; height: 26px; border: 3px solid #e0e0e0; border-top-color: #40916c; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .no-slots { text-align: center; padding: 16px 0 8px; color: #999; font-size: 15px; font-style: italic; }
+
+    /* ============================================================
+       MOBILE — détecté via JS → classe is-mobile sur body
+       Apps Script (et certains navigateurs mobiles) brisent les
+       media queries CSS dans les iframes → on utilise JS à la place
+    ============================================================ */
+    body.is-mobile .mosaic-bg        { grid-template-columns: repeat(2, 1fr); }
+    body.is-mobile .page             { padding: 10px 10px max(36px, env(safe-area-inset-bottom)); }
+
+    body.is-mobile .hero             { padding: 16px 10px 12px; }
+    body.is-mobile .hero-emoji       { font-size: 38px; margin-bottom: 8px; }
+    body.is-mobile .hero h1          { font-size: 22px; }
+    body.is-mobile .hero .subtitle   { font-size: 13px; }
+    body.is-mobile .location-badge   { font-size: 12px; padding: 5px 12px; margin-top: 8px; }
+
+    body.is-mobile .carousels-section           { grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
+    body.is-mobile .carousel                    { aspect-ratio: 16/9; }
+    body.is-mobile .carousel-label              { font-size: 14px; padding: 12px 12px 8px; }
+    body.is-mobile .carousel-btn                { width: 44px; height: 44px; font-size: 21px; }
+    body.is-mobile .carousel-btn.prev           { left: 10px; }
+    body.is-mobile .carousel-btn.next           { right: 10px; }
+    body.is-mobile .dot                         { width: 8px; height: 8px; }
+
+    body.is-mobile .card             { padding: 16px 14px 26px; border-radius: 16px; }
+    body.is-mobile .section-title    { font-size: 12px; }
+
+    body.is-mobile .vibes-grid       { grid-template-columns: 1fr; }
+    body.is-mobile .vibe-item        { padding: 12px 14px; }
+    body.is-mobile .vibe-item .vi    { font-size: 22px; }
+    body.is-mobile .vibe-item .vt    { font-size: 15px; }
+    body.is-mobile .vibe-item .vd    { font-size: 13px; }
+    body.is-mobile .vibe-item.full   { grid-column: 1; }
+
+    body.is-mobile .hebergement      { font-size: 15px; }
+    body.is-mobile .tag              { font-size: 14px; padding: 8px 14px; }
+
+    /* Deuxième bloc carousels dans la card : inutile sur mobile */
+    body.is-mobile .card > .carousels-section { display: none; }
+
+    body.is-mobile .form-section-title { font-size: 20px; }
+    body.is-mobile label               { font-size: 13px; }
+    body.is-mobile input[type="text"],
+    body.is-mobile input[type="email"],
+    body.is-mobile input[type="number"],
+    body.is-mobile textarea,
+    body.is-mobile select              { font-size: 16px; padding: 14px 14px; } /* 16px = pas de zoom iOS */
+    body.is-mobile .nb-hint            { font-size: 13px; }
+    body.is-mobile button[type="submit"] { padding: 18px; font-size: 17px; }
+  </style>
+</head>
+<body>
+
+  <div class="mosaic-bg">
+    <img src="https://lh3.googleusercontent.com/d/1ww1sXxwroIMyhaxitNUeyieSDe7Ro8-q" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1B_GweVVptMLvmHzCFCAguePjCRlAJlbl" alt="">
+    <img src="https://lh3.googleusercontent.com/d/12SwBocYi_hgqaCNX2QGrQuZqsh1HUD0S" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1zPqKahiTnp0hVf8V6mvbKP6AkgWP0Aed" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1aturEspvc_JoLtxV60rzQnGDDdlO_mG3" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1uvSh_dqIu5VEnez06B1sT_88kGCPIpxZ" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1MPY5wOs-Dh-er5A8zTwM5ffie7LKk1IH" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1I9gRwzMF46EQ5BAjP8kIlhD04fuDv_N6" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1TfzI8FVKhuwbKGgedlM1Uo3oeWciPQmE" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1eE43u07Pna7zUNprxl4YgBNfif3CxUPr" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1pMy0icd1eN7ovmOINAdDeDtqj5fx-nRl" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1IZrx_SPZ6wZ2XkRnblO34FL4LwnOW-_N" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1QXhV9yC0SaEGxtcoOjmgB7ouM_fyauyR" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1jKwFYgkimpB4fKZ4NHbUkYYG8ZiAna28" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1tjuji36b7qtW0znNwraZcidEbfcOHL8d" alt="">
+    <img src="https://lh3.googleusercontent.com/d/1ww1sXxwroIMyhaxitNUeyieSDe7Ro8-q" alt="">
+  </div>
+  <div class="mosaic-overlay"></div>
+
+  <div class="page">
+    <div class="hero">
+      <span class="hero-emoji">🍷🏰🌿</span>
+      <h1>Weekend à St-Georges-sur-Cher</h1>
+      <p class="subtitle">La Vallée de la Loire dans toute sa splendeur… et bien plus</p>
+      <div class="location-badge">📍 St-Georges-sur-Cher, Loir-et-Cher</div>
+    </div>
+
+    <div class="carousels-section">
+      <div class="carousel-block">
+        <div class="carousel-label">🏠 La maison</div>
+        <div class="carousel" id="carousel-maison">
+          <div class="carousel-track" id="track-maison">
+            <img src="https://lh3.googleusercontent.com/d/1ww1sXxwroIMyhaxitNUeyieSDe7Ro8-q" alt="Maison">
+            <img src="https://lh3.googleusercontent.com/d/1B_GweVVptMLvmHzCFCAguePjCRlAJlbl" alt="Salon">
+            <img src="https://lh3.googleusercontent.com/d/12SwBocYi_hgqaCNX2QGrQuZqsh1HUD0S" alt="Chambre d'amis">
+            <img src="https://lh3.googleusercontent.com/d/1zPqKahiTnp0hVf8V6mvbKP6AkgWP0Aed" alt="Belles poutres apparentes">
+            <img src="https://lh3.googleusercontent.com/d/1aturEspvc_JoLtxV60rzQnGDDdlO_mG3" alt="Cuisine">
+            <img src="https://lh3.googleusercontent.com/d/1uvSh_dqIu5VEnez06B1sT_88kGCPIpxZ" alt="Grosse ambiance">
+            <img src="https://lh3.googleusercontent.com/d/10bHQDSqPmP8ZX5k1-_Jx3ZivKJNq7cM8" alt="Voiture">
+            <img src="https://lh3.googleusercontent.com/d/11hQ5p2BLnHOaepOeeqGvO8C0scOL0SgB" alt="Poule">
+            <img src="https://lh3.googleusercontent.com/d/1NKi20YfuOfNEelbiyAellVAl1XW93-nP" alt="Jardin">
+            <img src="https://lh3.googleusercontent.com/d/1MPY5wOs-Dh-er5A8zTwM5ffie7LKk1IH" alt="Santé et pas des pieds">
+            <img src="https://lh3.googleusercontent.com/d/1I9gRwzMF46EQ5BAjP8kIlhD04fuDv_N6" alt="Système son du turfu">
+          </div>
+          <button class="carousel-btn prev" onclick="move('maison',-1)">‹</button>
+          <button class="carousel-btn next" onclick="move('maison', 1)">›</button>
+        </div>
+        <div class="carousel-dots" id="dots-maison"></div>
+      </div>
+      <div class="carousel-block">
+        <div class="carousel-label">🦁 Zoo & paysages</div>
+        <div class="carousel" id="carousel-nature">
+          <div class="carousel-track" id="track-nature">
+            <img src="https://lh3.googleusercontent.com/d/1TfzI8FVKhuwbKGgedlM1Uo3oeWciPQmE" alt="Baby tout mignon">
+            <img src="https://lh3.googleusercontent.com/d/1pMy0icd1eN7ovmOINAdDeDtqj5fx-nRl" alt="Château">
+            <img src="https://lh3.googleusercontent.com/d/1IZrx_SPZ6wZ2XkRnblO34FL4LwnOW-_N" alt="Se ressourcer">
+            <img src="https://lh3.googleusercontent.com/d/1QXhV9yC0SaEGxtcoOjmgB7ouM_fyauyR" alt="Profiter">
+            <img src="https://lh3.googleusercontent.com/d/1jKwFYgkimpB4fKZ4NHbUkYYG8ZiAna28" alt="Admirez">
+            <img src="https://lh3.googleusercontent.com/d/1tjuji36b7qtW0znNwraZcidEbfcOHL8d" alt="Nouveau dôme">
+          </div>
+          <button class="carousel-btn prev" onclick="move('nature',-1)">‹</button>
+          <button class="carousel-btn next" onclick="move('nature', 1)">›</button>
+        </div>
+        <div class="carousel-dots" id="dots-nature"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🎯 Au programme</div>
+      <div class="vibes-grid">
+        <div class="vibe-item"><span class="vi">🦁</span><div><div class="vt">Zoo de Beauval</div><div class="vd">Les pandas géants à 10 min</div></div></div>
+        <div class="vibe-item"><span class="vi">🏰</span><div><div class="vt">Châteaux de la Loire</div><div class="vd">Chambord, Chenonceau…</div></div></div>
+        <div class="vibe-item"><span class="vi">🍽️</span><div><div class="vt">Grosse ripaille</div><div class="vd">Petit dèj + repas inclus</div></div></div>
+        <div class="vibe-item"><span class="vi">🌲</span><div><div class="vt">Balade en forêt</div><div class="vd">Pour se ressourcer (ou cuver)</div></div></div>
+        <div class="vibe-item"><span class="vi">🍾</span><div><div class="vt">Dégustation de vins</div><div class="vd">On est en Touraine, faut pas gâcher</div></div></div>
+        <div class="vibe-item"><span class="vi">🎲</span><div><div class="vt">Jeux de société</div><div class="vd">Collection XXL, les soirées durent</div></div></div>
+        <div class="vibe-item full"><span class="vi">🔊</span><div><div class="vt">Système son niveau Ibiza</div><div class="vd">On a investi, et ça se ressent. Les voisins sont prévenus.</div></div></div>
+      </div>
+
+      <div class="section-title">🛏️ Où on dort ?</div>
+      <div class="hebergement">
+        <strong>Chambre d'amis</strong> avec lit double confortable + <strong>chauffeuse-lit</strong>, 3 matelas gonflables bien épais et un canapé-lit pour les retardataires.
+        Bref, on peut loger jusqu'à <strong>10 personnes</strong> sans que personne dorme par terre… enfin presque.
+      </div>
+
+      <div class="section-title">🤝 Ici tout le monde est le bienvenu</div>
+      <div class="tags">
+        <span class="tag green">👶 Kids friendly</span>
+        <span class="tag orange">🐕 Chiens bienvenus</span>
+        <span class="tag purple">🐈 Chats aussi</span>
+        <span class="tag blue">👨‍👩‍👧‍👦 1 à 10 personnes</span>
+        <span class="tag green">🍳 Petit dèj inclus</span>
+        <span class="tag orange">🍴 Repas inclus</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Deuxième carousels : desktop uniquement, masqué mobile via JS -->
+      <div class="carousels-section">
+        <div class="carousel-block">
+          <div class="carousel-label">🏠 La maison</div>
+          <div class="carousel" id="carousel-maison2">
+            <div class="carousel-track" id="track-maison2">
+              <img src="https://lh3.googleusercontent.com/d/1ww1sXxwroIMyhaxitNUeyieSDe7Ro8-q" alt="Maison">
+              <img src="https://lh3.googleusercontent.com/d/1B_GweVVptMLvmHzCFCAguePjCRlAJlbl" alt="Salon">
+              <img src="https://lh3.googleusercontent.com/d/12SwBocYi_hgqaCNX2QGrQuZqsh1HUD0S" alt="Chambre d'amis">
+              <img src="https://lh3.googleusercontent.com/d/1aturEspvc_JoLtxV60rzQnGDDdlO_mG3" alt="Cuisine">
+              <img src="https://lh3.googleusercontent.com/d/1uvSh_dqIu5VEnez06B1sT_88kGCPIpxZ" alt="Grosse ambiance">
+              <img src="https://lh3.googleusercontent.com/d/1MPY5wOs-Dh-er5A8zTwM5ffie7LKk1IH" alt="Santé">
+            </div>
+            <button class="carousel-btn prev" onclick="move('maison2',-1)">‹</button>
+            <button class="carousel-btn next" onclick="move('maison2', 1)">›</button>
+          </div>
+          <div class="carousel-dots" id="dots-maison2"></div>
+        </div>
+        <div class="carousel-block">
+          <div class="carousel-label">🦁 Zoo & paysages</div>
+          <div class="carousel" id="carousel-nature2">
+            <div class="carousel-track" id="track-nature2">
+              <img src="https://lh3.googleusercontent.com/d/1TfzI8FVKhuwbKGgedlM1Uo3oeWciPQmE" alt="Baby tout mignon">
+              <img src="https://lh3.googleusercontent.com/d/1pMy0icd1eN7ovmOINAdDeDtqj5fx-nRl" alt="Château">
+              <img src="https://lh3.googleusercontent.com/d/1IZrx_SPZ6wZ2XkRnblO34FL4LwnOW-_N" alt="Se ressourcer">
+              <img src="https://lh3.googleusercontent.com/d/1tjuji36b7qtW0znNwraZcidEbfcOHL8d" alt="Nouveau dôme">
+            </div>
+            <button class="carousel-btn prev" onclick="move('nature2',-1)">‹</button>
+            <button class="carousel-btn next" onclick="move('nature2', 1)">›</button>
+          </div>
+          <div class="carousel-dots" id="dots-nature2"></div>
+        </div>
+      </div>
+
+      <div class="form-section-title">📅 Réserver ton weekend</div>
+      <div class="loader visible" id="loader">
+        <div class="spinner"></div>
+        <div>Vérification des créneaux disponibles…</div>
+      </div>
+
+      <form id="reservationForm" style="display:none;" onsubmit="handleSubmit(event)">
+        <div class="form-group">
+          <label for="weekend">Weekend disponible 📅</label>
+          <div class="select-wrapper">
+            <select id="weekend" name="weekend" required>
+              <option value="">— Choisir un weekend —</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="nom">Ton prénom / nom 👤</label>
+          <input type="text" id="nom" name="nom" placeholder="Ex : Sophie Dupont" required />
+        </div>
+        <div class="form-group">
+          <label for="nbPersonnes">Vous serez combien ? 🧑‍🤝‍🧑</label>
+          <input type="number" id="nbPersonnes" name="nbPersonnes" min="1" max="10" placeholder="Ex : 3" required />
+          <div class="nb-hint">De 1 à 10 personnes</div>
+        </div>
+        <div class="form-group">
+          <label for="email">Ton email 📧</label>
+          <input type="email" id="email" name="email" placeholder="sophie@exemple.com" required />
+        </div>
+        <div class="form-group">
+          <label for="message">Un petit mot 💬</label>
+          <textarea id="message" name="message" placeholder="On arrive vendredi soir avec le chien et les enfants, on a hâte ! 🍷"></textarea>
+        </div>
+        <button type="submit" id="submitBtn">🎉 Je réserve ce weekend !</button>
+      </form>
+
+      <div class="no-slots" id="noSlots" style="display:none;">
+        Tous les weekends sont déjà pris… t'aurais dû te lever plus tôt 😄
+      </div>
+      <div class="message" id="feedbackMessage"></div>
+    </div>
+  </div>
+
+<script>
+  // ============================================================
+  // IMPORTANT : remplace cette URL par l'URL /exec de ton Apps Script
+  // ============================================================
+  var API_URL = 'https://script.google.com/macros/s/AKfycbyKDmf63_7GZ1abR4-0whXz1ZvYYiSYckTgXCFKYgGuBAlhuZu21iKVGSCqXMZKUc8/exec';
+
+  // ============================================================
+  // DÉTECTION MOBILE — via screen.width (pas affecté par les iframes)
+  // ============================================================
+  if (window.screen.width <= 768 || window.innerWidth <= 768) {
+    document.body.classList.add('is-mobile');
+  }
+
+  // ============================================================
+  // CAROUSELS
+  // ============================================================
+  var carousels = {
+    maison:  { index: 0, total: 0 },
+    nature:  { index: 0, total: 0 },
+    maison2: { index: 0, total: 0 },
+    nature2: { index: 0, total: 0 }
+  };
+
+  function initCarousel(name) {
+    var track      = document.getElementById('track-' + name);
+    var dotsEl     = document.getElementById('dots-' + name);
+    var carouselEl = document.getElementById('carousel-' + name);
+    if (!track) return;
+    var imgs = track.querySelectorAll('img');
+    if (!imgs.length) return;
+    carousels[name].total = imgs.length;
+
+    imgs.forEach(function(_, i) {
+      var d = document.createElement('div');
+      d.className = 'dot' + (i === 0 ? ' active' : '');
+      d.onclick = function() { goTo(name, i); };
+      dotsEl.appendChild(d);
+    });
+
+    var cap = document.createElement('div');
+    cap.className = 'caption'; cap.id = 'caption-' + name;
+    cap.textContent = imgs[0].alt;
+    carouselEl.appendChild(cap);
+
+    var delay = name.includes('2') ? 4400 : 3000;
+    setInterval(function() { move(name, 1); }, delay);
+
+    var tx = 0;
+    carouselEl.addEventListener('touchstart', function(e) { tx = e.touches[0].clientX; }, { passive: true });
+    carouselEl.addEventListener('touchend',   function(e) {
+      var diff = tx - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 40) move(name, diff > 0 ? 1 : -1);
+    }, { passive: true });
+  }
+
+  function goTo(name, idx) {
+    var c = carousels[name];
+    c.index = (idx + c.total) % c.total;
+    document.getElementById('track-' + name).style.transform = 'translateX(-' + (c.index * 100) + '%)';
+    document.getElementById('dots-' + name).querySelectorAll('.dot').forEach(function(d, i) {
+      d.classList.toggle('active', i === c.index);
+    });
+    var cap = document.getElementById('caption-' + name);
+    if (cap) cap.textContent = document.getElementById('track-' + name).querySelectorAll('img')[c.index].alt;
+  }
+
+  function move(name, dir) { goTo(name, carousels[name].index + dir); }
+
+  ['maison','nature','maison2','nature2'].forEach(initCarousel);
+
+  // ============================================================
+  // CHARGEMENT DES CRÉNEAUX — fetch vers Apps Script API
+  // ============================================================
+  fetch(API_URL + '?action=getWeekends')
+    .then(function(r) { return r.json(); })
+    .then(function(weekends) {
+      document.getElementById('loader').classList.remove('visible');
+      var select = document.getElementById('weekend');
+      if (!weekends || weekends.length === 0) {
+        document.getElementById('noSlots').style.display = 'block';
+        return;
+      }
+      weekends.forEach(function(w) {
+        var opt = document.createElement('option');
+        opt.value = w.rowIndex;
+        opt.textContent = 'Weekend du ' + w.label;
+        select.appendChild(opt);
+      });
+      document.getElementById('reservationForm').style.display = 'block';
+    })
+    .catch(function() {
+      document.getElementById('loader').classList.remove('visible');
+      afficherMessage('Impossible de charger les créneaux. Réessaie dans quelques secondes 🙏', 'error');
+    });
+
+  // ============================================================
+  // SOUMISSION — POST vers Apps Script API
+  // ============================================================
+  function handleSubmit(event) {
+    event.preventDefault();
+    var submitBtn   = document.getElementById('submitBtn');
+    var select      = document.getElementById('weekend');
+    var nbPersonnes = document.getElementById('nbPersonnes').value;
+
+    if (parseInt(nbPersonnes) < 1 || parseInt(nbPersonnes) > 10) {
+      afficherMessage('Entre 1 et 10 personnes max ! 😅', 'error');
+      return;
+    }
+
+    var formData = {
+      rowIndex:    select.value,
+      label:       select.options[select.selectedIndex].textContent,
+      nom:         document.getElementById('nom').value.trim(),
+      nbPersonnes: nbPersonnes,
+      email:       document.getElementById('email').value.trim(),
+      message:     document.getElementById('message').value.trim()
+    };
+
+    submitBtn.disabled    = true;
+    submitBtn.textContent = '⏳ Réservation en cours…';
+
+    fetch(API_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' }, // Apps Script exige text/plain pour éviter le preflight CORS
+      body:    JSON.stringify(formData)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+      if (result.success) {
+        document.getElementById('reservationForm').style.display = 'none';
+        afficherMessage(result.message, 'success');
+      } else {
+        submitBtn.disabled    = false;
+        submitBtn.textContent = '🎉 Je réserve ce weekend !';
+        afficherMessage(result.message, 'error');
+        var opt = select.options[select.selectedIndex];
+        if (opt) opt.remove();
+        select.value = '';
+      }
+    })
+    .catch(function() {
+      submitBtn.disabled    = false;
+      submitBtn.textContent = '🎉 Je réserve ce weekend !';
+      afficherMessage('Une erreur est survenue. Réessaie dans quelques secondes 🙏', 'error');
+    });
+  }
+
+  function afficherMessage(texte, type) {
+    var el = document.getElementById('feedbackMessage');
+    el.textContent = texte;
+    el.className = 'message ' + type;
+  }
+</script>
+</body>
+</html>
