@@ -1,0 +1,26 @@
+/* ============================================================
+   common.css — styles strictement partagés entre index.html et
+   vacances.html (reset, keyframes, base du spinner).
+   Le reste du design (couleurs, layout, mobile) reste dans le
+   <style> propre à chaque page pour ne rien changer visuellement.
+============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.spinner {
+  display: inline-block;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* Réinitialisation des <button> utilisés comme dots de carousel
+   ou comme boutons de suppression (voir A9/A10/A12 du PRD) */
+button.dot {
+  border: none;
+  padding: 0;
+  font: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}

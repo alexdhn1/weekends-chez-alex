@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <title>📅 Planning Alex & Jenna</title>
+  <link rel="stylesheet" href="common.css" />
   <style>
     :root {
       --vert:    #22c55e; --vert-bg:    #dcfce7; --vert-txt:    #14532d;
@@ -18,7 +19,6 @@
       --radius:  14px;
       --shadow:  0 2px 16px rgba(0,0,0,0.09);
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: #1e293b; min-height: 100vh; }
 
     /* ---- Header ---- */
@@ -66,9 +66,8 @@
     .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); }
     .cal-day {
       min-height: 72px; padding: 6px 4px 4px; border: 1px solid #f1f5f9;
-      position: relative; cursor: pointer; transition: background 0.15s;
+      position: relative; transition: background 0.15s;
     }
-    .cal-day:hover { background: #f8fafc; }
     .cal-day.other-month { opacity: 0.3; }
     .cal-day.today { background: #eff6ff; }
     .cal-day-num { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 3px; }
@@ -147,9 +146,14 @@
     .msg.error   { background: var(--rouge-bg); color: var(--rouge-txt); }
 
     /* ---- Loader ---- */
-    .loader-wrap { text-align: center; padding: 60px 20px; color: #94a3b8; }
-    .spinner { display: inline-block; width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #6366f1; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 12px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-wrap { text-align: center; padding: 60px 20px; color: #94a3b8; grid-column: 1 / -1; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #e2e8f0; border-top-color: #6366f1; margin-bottom: 12px; }
+    .retry-btn {
+      margin-top: 10px; padding: 8px 18px; border-radius: 20px;
+      border: 1.5px solid #6366f1; background: #fff; color: #4338ca; font-size: 13px;
+      font-weight: 700; cursor: pointer;
+    }
+    .retry-btn:hover { background: #eef2ff; }
 
     /* ---- Section titres ---- */
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
@@ -169,6 +173,7 @@
     .evt-list-item .evt-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
     .btn-delete { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 18px; padding: 4px 8px; border-radius: 6px; transition: background 0.2s; }
     .btn-delete:hover { background: var(--rouge-bg); }
+    .btn-delete.confirming { color: #fff; background: #ef4444; font-size: 12px; font-weight: 700; padding: 6px 10px; }
 
     /* ---- Mobile ---- */
     body.is-mobile .header { padding: 14px 12px 0; }
@@ -188,15 +193,15 @@
   <div class="header-top">
     <h1>📅 Alex & Jenna <span>Planning vacances</span></h1>
     <div class="user-switcher">
-      <button class="user-btn active" onclick="setUser('Alex')" id="btn-alex">👤 Alex</button>
-      <button class="user-btn" onclick="setUser('Jenna')" id="btn-jenna">👤 Jenna</button>
+      <button class="user-btn active" data-user="Alex" id="btn-alex">👤 Alex</button>
+      <button class="user-btn" data-user="Jenna" id="btn-jenna">👤 Jenna</button>
     </div>
   </div>
   <div class="tabs">
-    <button class="tab active" onclick="showTab('calendrier')" id="tab-calendrier">📅 Calendrier</button>
-    <button class="tab" onclick="showTab('creneaux')" id="tab-creneaux">🟢 Créneaux libres</button>
-    <button class="tab" onclick="showTab('ajouter')" id="tab-ajouter">➕ Ajouter</button>
-    <button class="tab" onclick="showTab('events')" id="tab-events">📋 Mes événements</button>
+    <button class="tab active" data-tab="calendrier" id="tab-calendrier">📅 Calendrier</button>
+    <button class="tab" data-tab="creneaux" id="tab-creneaux">🟢 Créneaux libres</button>
+    <button class="tab" data-tab="ajouter" id="tab-ajouter">➕ Ajouter</button>
+    <button class="tab" data-tab="events" id="tab-events">📋 Mes événements</button>
   </div>
 </div>
 
@@ -205,9 +210,9 @@
   <!-- ===== CALENDRIER ===== -->
   <div id="view-calendrier">
     <div class="cal-nav">
-      <button onclick="changeMonth(-1)">◀</button>
+      <button id="cal-prev" aria-label="Mois précédent">◀</button>
       <h2 id="cal-title">…</h2>
-      <button onclick="changeMonth(1)">▶</button>
+      <button id="cal-next" aria-label="Mois suivant">▶</button>
     </div>
     <div class="calendar-grid">
       <div class="cal-weekdays">
@@ -236,10 +241,10 @@
     <div class="section-header">
       <h2>🟢 Créneaux où vous êtes libres tous les deux</h2>
       <div class="filter-btns">
-        <button class="filter-btn active" onclick="filterCreneaux('all', this)">Tous</button>
-        <button class="filter-btn" onclick="filterCreneaux('weekend', this)">Weekends</button>
-        <button class="filter-btn" onclick="filterCreneaux('pont', this)">⭐ Ponts</button>
-        <button class="filter-btn" onclick="filterCreneaux('long', this)">3+ jours</button>
+        <button class="filter-btn active" data-filter="all">Tous</button>
+        <button class="filter-btn" data-filter="weekend">Weekends</button>
+        <button class="filter-btn" data-filter="pont">⭐ Ponts</button>
+        <button class="filter-btn" data-filter="long">3+ jours</button>
       </div>
     </div>
     <div class="creneaux-list" id="creneaux-list">
@@ -252,15 +257,15 @@
     <div class="add-form">
       <h2>➕ Ajouter un événement</h2>
       <div class="form-group">
-        <label>Qui saisit ?</label>
-        <div style="display:flex;gap:10px;">
-          <button class="user-btn active" onclick="setFormUser('Alex')" id="form-btn-alex" style="color:#1e293b;border-color:#1e293b;background:#f1f5f9;">👤 Alex</button>
-          <button class="user-btn" onclick="setFormUser('Jenna')" id="form-btn-jenna" style="color:#1e293b;border-color:#e2e8f0;background:#fff;">👤 Jenna</button>
+        <label id="form-user-label">Qui saisit ?</label>
+        <div style="display:flex;gap:10px;" role="group" aria-labelledby="form-user-label">
+          <button class="user-btn active" data-form-user="Alex" id="form-btn-alex" style="color:#1e293b;border-color:#1e293b;background:#f1f5f9;">👤 Alex</button>
+          <button class="user-btn" data-form-user="Jenna" id="form-btn-jenna" style="color:#1e293b;border-color:#e2e8f0;background:#fff;">👤 Jenna</button>
         </div>
       </div>
       <div class="form-group">
-        <label>Catégorie</label>
-        <select id="f-cat" onchange="updateFormForCat()">
+        <label for="f-cat">Catégorie</label>
+        <select id="f-cat">
           <option value="Alex">🔴 Alex occupé (déplacement, amis…)</option>
           <option value="Jenna">🟠 Jenna occupée (garde, amis…)</option>
           <option value="Vacances">🟣 Vacances ensemble</option>
@@ -270,19 +275,19 @@
       </div>
       <div class="date-row">
         <div class="form-group">
-          <label>Date début</label>
+          <label for="f-start">Date début</label>
           <input type="date" id="f-start"/>
         </div>
         <div class="form-group">
-          <label>Date fin</label>
+          <label for="f-end">Date fin</label>
           <input type="date" id="f-end"/>
         </div>
       </div>
       <div class="form-group">
-        <label>Note (optionnel)</label>
+        <label for="f-note">Note (optionnel)</label>
         <input type="text" id="f-note" placeholder="Ex: Weekend à Paris, Garde hôpital…"/>
       </div>
-      <button class="btn-submit" id="btn-add" onclick="submitEvent()">✅ Ajouter</button>
+      <button class="btn-submit" id="btn-add">✅ Ajouter</button>
       <div id="add-msg"></div>
     </div>
   </div>
@@ -292,6 +297,7 @@
     <div class="section-header">
       <h2 id="events-title">📋 Événements de Alex</h2>
     </div>
+    <div id="events-msg"></div>
     <div id="events-list">
       <div class="loader-wrap"><div class="spinner"></div><div>Chargement…</div></div>
     </div>
@@ -299,45 +305,38 @@
 
 </div>
 
+<script src="common.js"></script>
 <script>
 // ============================================================
 // CONFIG — remplace par l'URL /exec de ton Apps Script Vacances
 // ============================================================
 var API = 'https://script.google.com/macros/s/AKfycbwSl-VycAZk9-Q_ZOs9Jzo7hHZB_1dARbYF0dmshd52aEBeAqUGF_2FbH6ELy8cHVmF/exec';
 
-// Ponts entreprise Alex pré-configurés
-var PONTS_ALEX = [
-  { dateStart: '2025-05-15', dateEnd: '2025-05-15', note: 'Pont Ascension' },
-  { dateStart: '2025-05-23', dateEnd: '2025-05-25', note: 'Long weekend mai' },
-  { dateStart: '2025-07-11', dateEnd: '2025-07-14', note: 'Pont 14 juillet' },
-  { dateStart: '2025-12-28', dateEnd: '2025-12-31', note: 'Fermeture annuelle' },
-];
-
-var currentUser    = 'Alex';
+var currentUser     = 'Alex';
 var currentFormUser = 'Alex';
-var currentTab     = 'calendrier';
-var calYear        = new Date().getFullYear();
-var calMonth       = new Date().getMonth();
-var allEvents      = [];
-var imported       = [];
-var creneauxFilter = 'all';
+var currentTab      = 'calendrier';
+var calYear         = new Date().getFullYear();
+var calMonth        = new Date().getMonth();
+var allEvents       = [];
+var imported        = [];
+var ponts           = []; // chargés depuis l'API (clé "ponts"), plus de tableau hardcodé (A7)
+var creneauxFilter  = 'all';
 
-// Détection mobile
-if (window.screen.width <= 768 || window.innerWidth <= 768) {
-  document.body.classList.add('is-mobile');
-}
+detectMobile();
 
 // ============================================================
 // CHARGEMENT DONNÉES
 // ============================================================
 function loadData() {
-  fetch(API + '?action=getAll')
-    .then(function(r) { return r.json(); })
+  showLoadingState();
+  getJson(API, { action: 'getAll' })
     .then(function(data) {
       allEvents = data.events || [];
       imported  = data.imported || [];
-      // Injecter les ponts Alex comme événements locaux si pas déjà en base
-      PONTS_ALEX.forEach(function(p) {
+      ponts     = data.ponts || [];
+      // Injecte les ponts comme événements locaux (catégorie "Pont") pour
+      // qu'ils s'affichent dans le calendrier comme les autres événements.
+      ponts.forEach(function(p) {
         allEvents.push({
           id: 'pont-' + p.dateStart,
           dateStart: p.dateStart,
@@ -354,7 +353,56 @@ function loadData() {
     })
     .catch(function(err) {
       console.error('Erreur chargement:', err);
+      showLoadError();
     });
+}
+
+function clearContainer(el) {
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function buildLoaderWrap(text) {
+  var wrap = document.createElement('div');
+  wrap.className = 'loader-wrap';
+  var spinner = document.createElement('div');
+  spinner.className = 'spinner';
+  wrap.appendChild(spinner);
+  var txt = document.createElement('div');
+  txt.textContent = text;
+  wrap.appendChild(txt);
+  return wrap;
+}
+
+function showLoadingState() {
+  ['cal-days', 'creneaux-list', 'events-list'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    clearContainer(el);
+    el.appendChild(buildLoaderWrap('Chargement…'));
+  });
+}
+
+// A6 : au lieu d'un catch silencieux, on affiche un message d'erreur
+// + un bouton « Réessayer » dans chaque vue concernée.
+function showLoadError() {
+  ['cal-days', 'creneaux-list', 'events-list'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    clearContainer(el);
+    var wrap = document.createElement('div');
+    wrap.className = 'loader-wrap';
+    wrap.style.color = '#b91c1c';
+    var txt = document.createElement('div');
+    txt.textContent = 'Impossible de charger les données. Vérifie ta connexion 🙏';
+    var retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'retry-btn';
+    retry.textContent = '🔄 Réessayer';
+    retry.addEventListener('click', loadData);
+    wrap.appendChild(txt);
+    wrap.appendChild(retry);
+    el.appendChild(wrap);
+  });
 }
 
 // ============================================================
@@ -445,7 +493,7 @@ function evtLabel(e) {
 function renderCalendar() {
   document.getElementById('cal-title').textContent = MOIS[calMonth] + ' ' + calYear;
   var container = document.getElementById('cal-days');
-  container.innerHTML = '';
+  clearContainer(container);
 
   var firstDay = new Date(calYear, calMonth, 1).getDay();
   firstDay = firstDay === 0 ? 6 : firstDay - 1; // lundi = 0
@@ -559,16 +607,20 @@ function renderCreneaux() {
     if (creneauxFilter === 'long') return s.days >= 3;
     if (creneauxFilter === 'pont') {
       // Vérifie si un pont intersecte
-      return PONTS_ALEX.some(function(p) {
+      return ponts.some(function(p) {
         return p.dateStart <= toDateStr(s.end) && p.dateEnd >= toDateStr(s.start);
       });
     }
     return true;
   });
 
-  container.innerHTML = '';
+  clearContainer(container);
   if (!filtered.length) {
-    container.innerHTML = '<div class="loader-wrap" style="color:#94a3b8">Aucun créneau trouvé pour ce filtre 😕</div>';
+    var empty = document.createElement('div');
+    empty.className = 'loader-wrap';
+    empty.style.color = '#94a3b8';
+    empty.textContent = 'Aucun créneau trouvé pour ce filtre 😕';
+    container.appendChild(empty);
     return;
   }
 
@@ -577,7 +629,7 @@ function renderCreneaux() {
     card.className = 'creneau-card';
 
     // Est-ce que c'est un pont ?
-    var isPont = PONTS_ALEX.some(function(p) {
+    var isPont = ponts.some(function(p) {
       return p.dateStart <= toDateStr(s.end) && p.dateEnd >= toDateStr(s.start);
     });
     // Est-ce que c'est déjà des vacances planifiées ?
@@ -592,17 +644,32 @@ function renderCreneaux() {
     var label = formatDateRange(s.start, s.end);
     var dureeLabel = s.days === 1 ? '1 jour' : s.days + ' jours';
 
-    card.innerHTML =
-      '<div>' +
-        '<div class="creneau-date">' + label + '</div>' +
-        '<div class="creneau-duree">' + dureeLabel + (isPont ? ' · inclut un pont 🎉' : '') + '</div>' +
-      '</div>' +
-      '<div>' +
-        (isVac  ? '<span class="creneau-badge badge-vacances">🟣 Vacances prévues</span>' :
-         isPont ? '<span class="creneau-badge badge-pont">⭐ Dispo / Pont</span>' :
-                  '<span class="creneau-badge badge-libre">🟢 Libre</span>') +
-      '</div>';
+    var left = document.createElement('div');
+    var dateEl = document.createElement('div');
+    dateEl.className = 'creneau-date';
+    dateEl.textContent = label;
+    var dureeEl = document.createElement('div');
+    dureeEl.className = 'creneau-duree';
+    dureeEl.textContent = dureeLabel + (isPont ? ' · inclut un pont 🎉' : '');
+    left.appendChild(dateEl);
+    left.appendChild(dureeEl);
 
+    var right = document.createElement('div');
+    var badge = document.createElement('span');
+    if (isVac) {
+      badge.className = 'creneau-badge badge-vacances';
+      badge.textContent = '🟣 Vacances prévues';
+    } else if (isPont) {
+      badge.className = 'creneau-badge badge-pont';
+      badge.textContent = '⭐ Dispo / Pont';
+    } else {
+      badge.className = 'creneau-badge badge-libre';
+      badge.textContent = '🟢 Libre';
+    }
+    right.appendChild(badge);
+
+    card.appendChild(left);
+    card.appendChild(right);
     container.appendChild(card);
   });
 }
@@ -623,24 +690,47 @@ function renderEventsList() {
     return e.personne === currentUser && !e.builtin;
   });
 
+  clearContainer(container);
+
   if (!userEvts.length) {
-    container.innerHTML = '<div class="loader-wrap" style="color:#94a3b8">Aucun événement pour ' + currentUser + ' 📭</div>';
+    var empty = document.createElement('div');
+    empty.className = 'loader-wrap';
+    empty.style.color = '#94a3b8';
+    empty.textContent = 'Aucun événement pour ' + currentUser + ' 📭';
+    container.appendChild(empty);
     return;
   }
 
-  container.innerHTML = '';
+  var icons = { Libre:'🟢', Alex:'🔴', Jenna:'🟠', Invités:'🔵', Vacances:'🟣', Pont:'⭐' };
   userEvts.sort(function(a,b) { return a.dateStart > b.dateStart ? 1 : -1; });
   userEvts.forEach(function(e) {
     var item = document.createElement('div');
     item.className = 'evt-list-item';
-    var icons = { Libre:'🟢', Alex:'🔴', Jenna:'🟠', Invités:'🔵', Vacances:'🟣', Pont:'⭐' };
+
+    var info = document.createElement('div');
+    info.className = 'evt-info';
+
+    var title = document.createElement('div');
+    title.className = 'evt-title';
     var icon = icons[e.categorie] || '📌';
-    item.innerHTML =
-      '<div class="evt-info">' +
-        '<div class="evt-title">' + icon + ' ' + (e.note || e.categorie) + '</div>' +
-        '<div class="evt-sub">' + formatDateRange(new Date(e.dateStart), new Date(e.dateEnd || e.dateStart)) + ' · ' + e.categorie + '</div>' +
-      '</div>' +
-      '<button class="btn-delete" onclick="deleteEvt(\'' + e.id + '\')" title="Supprimer">🗑</button>';
+    title.textContent = icon + ' ' + (e.note || e.categorie);
+
+    var sub = document.createElement('div');
+    sub.className = 'evt-sub';
+    sub.textContent = formatDateRange(new Date(e.dateStart), new Date(e.dateEnd || e.dateStart)) + ' · ' + e.categorie;
+
+    info.appendChild(title);
+    info.appendChild(sub);
+
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn-delete';
+    delBtn.title = 'Supprimer';
+    delBtn.textContent = '🗑';
+    delBtn.dataset.id = e.id;
+
+    item.appendChild(info);
+    item.appendChild(delBtn);
     container.appendChild(item);
   });
 }
@@ -664,19 +754,14 @@ function submitEvent() {
   var btn = document.getElementById('btn-add');
   btn.disabled = true; btn.textContent = '⏳ Enregistrement…';
 
-  fetch(API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({
-      action:     'addEvent',
-      categorie:  cat,
-      personne:   currentFormUser,
-      dateStart:  start,
-      dateEnd:    end || start,
-      note:       note
-    })
+  postJson(API, {
+    action:     'addEvent',
+    categorie:  cat,
+    personne:   currentFormUser,
+    dateStart:  start,
+    dateEnd:    end || start,
+    note:       note
   })
-  .then(function(r) { return r.json(); })
   .then(function(res) {
     btn.disabled = false; btn.textContent = '✅ Ajouter';
     if (res.success) {
@@ -696,27 +781,54 @@ function submitEvent() {
 }
 
 function showAddMsg(txt, type) {
-  var el = document.getElementById('add-msg');
-  el.textContent = txt;
-  el.className = 'msg ' + type;
-  setTimeout(function() { el.textContent = ''; el.className = ''; }, 4000);
+  showMessage('add-msg', txt, type, 'msg');
+  setTimeout(function() {
+    var el = document.getElementById('add-msg');
+    el.textContent = '';
+    el.className = '';
+  }, 4000);
 }
 
 // ============================================================
-// SUPPRESSION
+// SUPPRESSION — confirmation inline (double-clic) au lieu de confirm() (A13)
 // ============================================================
-function deleteEvt(id) {
-  if (!confirm('Supprimer cet événement ?')) return;
-  fetch(API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action: 'deleteEvent', id: id })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(res) {
-    if (res.success) loadData();
-    else alert('Erreur suppression : ' + res.message);
-  });
+function deleteEvt(id, btn) {
+  if (btn && !btn.classList.contains('confirming')) {
+    btn.classList.add('confirming');
+    btn.textContent = 'Confirmer ?';
+    btn.title = 'Cliquer à nouveau pour confirmer la suppression';
+    btn._resetTimer = setTimeout(function() {
+      btn.classList.remove('confirming');
+      btn.textContent = '🗑';
+      btn.title = 'Supprimer';
+    }, 3000);
+    return;
+  }
+  if (btn) {
+    clearTimeout(btn._resetTimer);
+    btn.disabled = true;
+  }
+  postJson(API, { action: 'deleteEvent', id: id })
+    .then(function(res) {
+      if (res.success) {
+        loadData();
+      } else {
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('confirming');
+          btn.textContent = '🗑';
+        }
+        showMessage('events-msg', 'Erreur suppression : ' + res.message, 'error', 'msg');
+      }
+    })
+    .catch(function() {
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('confirming');
+        btn.textContent = '🗑';
+      }
+      showMessage('events-msg', 'Erreur réseau lors de la suppression 🙏', 'error', 'msg');
+    });
 }
 
 // ============================================================
@@ -740,6 +852,37 @@ function formatDateRange(start, end) {
   }
   return s.getDate() + ' ' + mois[s.getMonth()] + ' → ' + e.getDate() + ' ' + mois[e.getMonth()] + ' ' + e.getFullYear();
 }
+
+// ============================================================
+// ÉVÉNEMENTS UI (délégation, plus d'onclick inline — A12)
+// ============================================================
+document.querySelectorAll('.user-switcher .user-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() { setUser(btn.dataset.user); });
+});
+
+document.querySelectorAll('.tabs .tab').forEach(function(btn) {
+  btn.addEventListener('click', function() { showTab(btn.dataset.tab); });
+});
+
+document.getElementById('cal-prev').addEventListener('click', function() { changeMonth(-1); });
+document.getElementById('cal-next').addEventListener('click', function() { changeMonth(1); });
+
+document.querySelectorAll('.filter-btns .filter-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() { filterCreneaux(btn.dataset.filter, btn); });
+});
+
+document.querySelectorAll('#view-ajouter .user-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() { setFormUser(btn.dataset.formUser); });
+});
+
+document.getElementById('f-cat').addEventListener('change', updateFormForCat);
+document.getElementById('btn-add').addEventListener('click', submitEvent);
+
+// Délégation pour les boutons de suppression, créés dynamiquement dans renderEventsList()
+document.getElementById('events-list').addEventListener('click', function(e) {
+  var btn = e.target.closest('.btn-delete');
+  if (btn) deleteEvt(btn.dataset.id, btn);
+});
 
 // ============================================================
 // INIT
