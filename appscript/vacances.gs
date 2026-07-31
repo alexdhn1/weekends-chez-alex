@@ -146,6 +146,41 @@ function getPonts() {
 }
 
 // ------------------------------------------------------------
+// INITIALISATION — à lancer UNE FOIS depuis l'éditeur Apps Script.
+// Crée l'onglet "Ponts" avec ses en-têtes s'il n'existe pas encore.
+// Remplace l'ancien tableau PONTS_ALEX hardcodé dans vacances.html :
+// les ponts s'éditent désormais directement dans cet onglet.
+// ------------------------------------------------------------
+function initPontsSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_PONTS);
+
+  if (sheet) {
+    SpreadsheetApp.getUi().alert(
+      'L\'onglet "' + SHEET_PONTS + '" existe déjà — rien à faire. ' +
+      'Ajoute tes ponts directement dedans.'
+    );
+    return;
+  }
+
+  sheet = ss.insertSheet(SHEET_PONTS);
+  var headers = ['Date début', 'Date fin', 'Note'];
+  var headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers]);
+  headerRange.setFontWeight('bold');
+  headerRange.setBackground('#2d4a3e');
+  headerRange.setFontColor('#ffffff');
+  sheet.getRange(2, 1, 200, 2).setNumberFormat('dd/mm/yyyy');
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, headers.length);
+
+  SpreadsheetApp.getUi().alert(
+    '✅ Onglet "' + SHEET_PONTS + '" créé. Ajoute une ligne par pont : ' +
+    'date de début, date de fin, note (ex. "Pont Ascension").'
+  );
+}
+
+// ------------------------------------------------------------
 // AJOUT (A3 validations serveur + LockService)
 // ------------------------------------------------------------
 function addEvent(body) {

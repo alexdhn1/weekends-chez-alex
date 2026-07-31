@@ -9,7 +9,7 @@
 // le token que tu as mis dans les Script Properties de CHAQUE
 // Apps Script (clé API_TOKEN) — voir appscript/README.md.
 // ------------------------------------------------------------
-var API_TOKEN = 'CHANGE_ME_TOKEN';
+var API_TOKEN = 'uVJdFa0CV7H4uJvGv6xWsGu3I_P2ND3a';
 
 // ------------------------------------------------------------
 // Détection mobile via screen.width (pas affecté par les iframes
