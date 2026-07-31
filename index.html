@@ -489,6 +489,7 @@
         weekends.forEach(function(w) {
           var opt = document.createElement('option');
           opt.value = w.rowIndex;
+          opt.dataset.label = w.label;
           opt.textContent = 'Weekend du ' + w.label;
           select.appendChild(opt);
         });
@@ -533,7 +534,7 @@
 
     var formData = {
       rowIndex:    select.value,
-      label:       select.options[select.selectedIndex].textContent,
+      label:       select.options[select.selectedIndex].dataset.label,
       nom:         document.getElementById('nom').value.trim(),
       nbPersonnes: nbPersonnes,
       email:       document.getElementById('email').value.trim(),
