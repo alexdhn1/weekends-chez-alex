@@ -4,9 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
   <title>Weekend à St-Georges-sur-Cher 🍷</title>
+  <link rel="stylesheet" href="common.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       min-height: 100vh;
@@ -61,6 +60,7 @@
     .carousel-dots { display: flex; justify-content: center; gap: 5px; padding: 8px 0 6px; flex-wrap: wrap; }
     .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.35); cursor: pointer; transition: background 0.3s, transform 0.3s; flex-shrink: 0; }
     .dot.active { background: #fff; transform: scale(1.35); }
+    .dot:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
     .carousel-btn {
       position: absolute; top: 50%; transform: translateY(-50%);
       background: rgba(0,0,0,0.32); border: none; color: #fff;
@@ -69,6 +69,7 @@
       transition: background 0.2s; z-index: 3;
     }
     .carousel-btn:hover { background: rgba(0,0,0,0.58); }
+    .carousel-btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
     .carousel-btn.prev { left: 6px; }
     .carousel-btn.next { right: 6px; }
     .caption {
@@ -150,9 +151,14 @@
 
     .loader { display: none; text-align: center; padding: 28px 0; color: #888; }
     .loader.visible { display: block; }
-    .spinner { display: inline-block; width: 26px; height: 26px; border: 3px solid #e0e0e0; border-top-color: #40916c; border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 10px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: 26px; height: 26px; border: 3px solid #e0e0e0; border-top-color: #40916c; margin-bottom: 10px; }
     .no-slots { text-align: center; padding: 16px 0 8px; color: #999; font-size: 15px; font-style: italic; }
+    .retry-btn {
+      display: inline-block; margin-top: 10px; padding: 8px 18px; border-radius: 20px;
+      border: 1.5px solid #40916c; background: #fff; color: #2d6a4f; font-size: 13px;
+      font-weight: 700; cursor: pointer;
+    }
+    .retry-btn:hover { background: #f0f8f2; }
 
     /* ============================================================
        MOBILE — détecté via JS → classe is-mobile sur body
@@ -260,8 +266,8 @@
             <img src="https://lh3.googleusercontent.com/d/1MPY5wOs-Dh-er5A8zTwM5ffie7LKk1IH" alt="Santé et pas des pieds">
             <img src="https://lh3.googleusercontent.com/d/1I9gRwzMF46EQ5BAjP8kIlhD04fuDv_N6" alt="Système son du turfu">
           </div>
-          <button class="carousel-btn prev" onclick="move('maison',-1)">‹</button>
-          <button class="carousel-btn next" onclick="move('maison', 1)">›</button>
+          <button class="carousel-btn prev" data-carousel="maison" data-dir="-1" aria-label="Image précédente">‹</button>
+          <button class="carousel-btn next" data-carousel="maison" data-dir="1" aria-label="Image suivante">›</button>
         </div>
         <div class="carousel-dots" id="dots-maison"></div>
       </div>
@@ -276,8 +282,8 @@
             <img src="https://lh3.googleusercontent.com/d/1jKwFYgkimpB4fKZ4NHbUkYYG8ZiAna28" alt="Admirez">
             <img src="https://lh3.googleusercontent.com/d/1tjuji36b7qtW0znNwraZcidEbfcOHL8d" alt="Nouveau dôme">
           </div>
-          <button class="carousel-btn prev" onclick="move('nature',-1)">‹</button>
-          <button class="carousel-btn next" onclick="move('nature', 1)">›</button>
+          <button class="carousel-btn prev" data-carousel="nature" data-dir="-1" aria-label="Image précédente">‹</button>
+          <button class="carousel-btn next" data-carousel="nature" data-dir="1" aria-label="Image suivante">›</button>
         </div>
         <div class="carousel-dots" id="dots-nature"></div>
       </div>
@@ -326,8 +332,8 @@
               <img src="https://lh3.googleusercontent.com/d/1uvSh_dqIu5VEnez06B1sT_88kGCPIpxZ" alt="Grosse ambiance">
               <img src="https://lh3.googleusercontent.com/d/1MPY5wOs-Dh-er5A8zTwM5ffie7LKk1IH" alt="Santé">
             </div>
-            <button class="carousel-btn prev" onclick="move('maison2',-1)">‹</button>
-            <button class="carousel-btn next" onclick="move('maison2', 1)">›</button>
+            <button class="carousel-btn prev" data-carousel="maison2" data-dir="-1" aria-label="Image précédente">‹</button>
+            <button class="carousel-btn next" data-carousel="maison2" data-dir="1" aria-label="Image suivante">›</button>
           </div>
           <div class="carousel-dots" id="dots-maison2"></div>
         </div>
@@ -340,8 +346,8 @@
               <img src="https://lh3.googleusercontent.com/d/1IZrx_SPZ6wZ2XkRnblO34FL4LwnOW-_N" alt="Se ressourcer">
               <img src="https://lh3.googleusercontent.com/d/1tjuji36b7qtW0znNwraZcidEbfcOHL8d" alt="Nouveau dôme">
             </div>
-            <button class="carousel-btn prev" onclick="move('nature2',-1)">‹</button>
-            <button class="carousel-btn next" onclick="move('nature2', 1)">›</button>
+            <button class="carousel-btn prev" data-carousel="nature2" data-dir="-1" aria-label="Image précédente">‹</button>
+            <button class="carousel-btn next" data-carousel="nature2" data-dir="1" aria-label="Image suivante">›</button>
           </div>
           <div class="carousel-dots" id="dots-nature2"></div>
         </div>
@@ -353,7 +359,7 @@
         <div>Vérification des créneaux disponibles…</div>
       </div>
 
-      <form id="reservationForm" style="display:none;" onsubmit="handleSubmit(event)">
+      <form id="reservationForm" style="display:none;">
         <div class="form-group">
           <label for="weekend">Weekend disponible 📅</label>
           <div class="select-wrapper">
@@ -389,18 +395,14 @@
     </div>
   </div>
 
+<script src="common.js"></script>
 <script>
   // ============================================================
   // IMPORTANT : remplace cette URL par l'URL /exec de ton Apps Script
   // ============================================================
   var API_URL = 'https://script.google.com/macros/s/AKfycbyKDmf63_7GZ1abR4-0whXz1ZvYYiSYckTgXCFKYgGuBAlhuZu21iKVGSCqXMZKUc8/exec';
 
-  // ============================================================
-  // DÉTECTION MOBILE — via screen.width (pas affecté par les iframes)
-  // ============================================================
-  if (window.screen.width <= 768 || window.innerWidth <= 768) {
-    document.body.classList.add('is-mobile');
-  }
+  detectMobile();
 
   // ============================================================
   // CAROUSELS
@@ -421,10 +423,12 @@
     if (!imgs.length) return;
     carousels[name].total = imgs.length;
 
-    imgs.forEach(function(_, i) {
-      var d = document.createElement('div');
+    imgs.forEach(function(img, i) {
+      var d = document.createElement('button');
+      d.type = 'button';
       d.className = 'dot' + (i === 0 ? ' active' : '');
-      d.onclick = function() { goTo(name, i); };
+      d.setAttribute('aria-label', 'Aller à l\'image ' + (i + 1));
+      d.addEventListener('click', function() { goTo(name, i); });
       dotsEl.appendChild(d);
     });
 
@@ -459,30 +463,59 @@
 
   ['maison','nature','maison2','nature2'].forEach(initCarousel);
 
+  document.querySelectorAll('.carousel-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      move(btn.dataset.carousel, parseInt(btn.dataset.dir, 10));
+    });
+  });
+
   // ============================================================
   // CHARGEMENT DES CRÉNEAUX — fetch vers Apps Script API
   // ============================================================
-  fetch(API_URL + '?action=getWeekends')
-    .then(function(r) { return r.json(); })
-    .then(function(weekends) {
-      document.getElementById('loader').classList.remove('visible');
-      var select = document.getElementById('weekend');
-      if (!weekends || weekends.length === 0) {
-        document.getElementById('noSlots').style.display = 'block';
-        return;
-      }
-      weekends.forEach(function(w) {
-        var opt = document.createElement('option');
-        opt.value = w.rowIndex;
-        opt.textContent = 'Weekend du ' + w.label;
-        select.appendChild(opt);
+  function loadWeekends() {
+    document.getElementById('loader').classList.add('visible');
+    return getJson(API_URL, { action: 'getWeekends' })
+      .then(function(weekends) {
+        document.getElementById('loader').classList.remove('visible');
+        var select = document.getElementById('weekend');
+        while (select.options.length > 1) select.remove(1);
+        select.value = '';
+        if (!weekends || weekends.length === 0) {
+          document.getElementById('noSlots').style.display = 'block';
+          document.getElementById('reservationForm').style.display = 'none';
+          return;
+        }
+        document.getElementById('noSlots').style.display = 'none';
+        weekends.forEach(function(w) {
+          var opt = document.createElement('option');
+          opt.value = w.rowIndex;
+          opt.textContent = 'Weekend du ' + w.label;
+          select.appendChild(opt);
+        });
+        document.getElementById('reservationForm').style.display = 'block';
+      })
+      .catch(function() {
+        document.getElementById('loader').classList.remove('visible');
+        showLoadError();
       });
-      document.getElementById('reservationForm').style.display = 'block';
-    })
-    .catch(function() {
-      document.getElementById('loader').classList.remove('visible');
-      afficherMessage('Impossible de charger les créneaux. Réessaie dans quelques secondes 🙏', 'error');
-    });
+  }
+
+  function showLoadError() {
+    var el = document.getElementById('feedbackMessage');
+    el.innerHTML = '';
+    el.className = 'message error';
+    var texte = document.createElement('div');
+    texte.textContent = 'Impossible de charger les créneaux. Vérifie ta connexion 🙏';
+    var retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'retry-btn';
+    retry.textContent = '🔄 Réessayer';
+    retry.addEventListener('click', loadWeekends);
+    el.appendChild(texte);
+    el.appendChild(retry);
+  }
+
+  loadWeekends();
 
   // ============================================================
   // SOUMISSION — POST vers Apps Script API
@@ -494,7 +527,7 @@
     var nbPersonnes = document.getElementById('nbPersonnes').value;
 
     if (parseInt(nbPersonnes) < 1 || parseInt(nbPersonnes) > 10) {
-      afficherMessage('Entre 1 et 10 personnes max ! 😅', 'error');
+      showMessage('feedbackMessage', 'Entre 1 et 10 personnes max ! 😅', 'error');
       return;
     }
 
@@ -510,37 +543,28 @@
     submitBtn.disabled    = true;
     submitBtn.textContent = '⏳ Réservation en cours…';
 
-    fetch(API_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'text/plain' }, // Apps Script exige text/plain pour éviter le preflight CORS
-      body:    JSON.stringify(formData)
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(result) {
-      if (result.success) {
-        document.getElementById('reservationForm').style.display = 'none';
-        afficherMessage(result.message, 'success');
-      } else {
+    postJson(API_URL, formData)
+      .then(function(result) {
+        if (result.success) {
+          document.getElementById('reservationForm').style.display = 'none';
+          showMessage('feedbackMessage', result.message, 'success');
+        } else {
+          submitBtn.disabled    = false;
+          submitBtn.textContent = '🎉 Je réserve ce weekend !';
+          showMessage('feedbackMessage', result.message, 'error');
+          // Resync (A4) : le créneau a pu changer entre-temps, on recharge
+          // la liste complète et on réinitialise la sélection.
+          loadWeekends();
+        }
+      })
+      .catch(function() {
         submitBtn.disabled    = false;
         submitBtn.textContent = '🎉 Je réserve ce weekend !';
-        afficherMessage(result.message, 'error');
-        var opt = select.options[select.selectedIndex];
-        if (opt) opt.remove();
-        select.value = '';
-      }
-    })
-    .catch(function() {
-      submitBtn.disabled    = false;
-      submitBtn.textContent = '🎉 Je réserve ce weekend !';
-      afficherMessage('Une erreur est survenue. Réessaie dans quelques secondes 🙏', 'error');
-    });
+        showMessage('feedbackMessage', 'Une erreur est survenue. Réessaie dans quelques secondes 🙏', 'error');
+      });
   }
 
-  function afficherMessage(texte, type) {
-    var el = document.getElementById('feedbackMessage');
-    el.textContent = texte;
-    el.className = 'message ' + type;
-  }
+  document.getElementById('reservationForm').addEventListener('submit', handleSubmit);
 </script>
 </body>
 </html>
