@@ -346,6 +346,7 @@
           <a class="maps-link" href="https://www.google.com/maps/search/?api=1&query=9+rue+des+Vendanges+41400+Saint-Georges-sur-Cher" target="_blank" rel="noopener noreferrer">🗺️ Ouvrir dans Google Maps</a>
           <a class="maps-link" href="https://maps.apple.com/?q=9+rue+des+Vendanges+41400+Saint-Georges-sur-Cher" target="_blank" rel="noopener noreferrer">🍎 Ouvrir dans Apple Plans</a>
           <a class="maps-link" href="https://waze.com/ul?q=9%20rue%20des%20Vendanges%2041400%20Saint-Georges-sur-Cher" target="_blank" rel="noopener noreferrer">🚗 Ouvrir dans Waze</a>
+          <a class="maps-link" id="sortiesLink" href="https://alexdhn1.github.io/sorties-cher/" target="_blank" rel="noopener noreferrer">🗺️ Que faire sur place ? Le guide des sorties d'Alex</a>
         </div>
       </div>
 
@@ -547,6 +548,37 @@
     el.appendChild(texte);
     el.appendChild(retry);
   }
+
+  // Lien "guide des sorties" : pointe sur la vue Séjour pré-filtrée quand un
+  // weekend est choisi (les libellés du Sheet sont du type "15-16 août 2026").
+  var SORTIES_BASE = 'https://alexdhn1.github.io/sorties-cher/';
+  var MOIS_FR = { janvier:1, janv:1, jan:1, fevrier:2, février:2, févr:2, fev:2, fév:2,
+    mars:3, avril:4, avr:4, mai:5, juin:6, juillet:7, juil:7, aout:8, août:8,
+    septembre:9, sept:9, sep:9, octobre:10, oct:10, novembre:11, nov:11,
+    decembre:12, décembre:12, déc:12, dec:12 };
+  function isoDate(y, m, d) { return y + '-' + ('0' + m).slice(-2) + '-' + ('0' + d).slice(-2); }
+  function sortiesUrlFromLabel(label) {
+    var t = String(label || '').trim().toLowerCase();
+    // "15-16 août 2026"
+    var m = /^(\d{1,2})(?:er)?\s*[-–]\s*(\d{1,2})(?:er)?\s+([a-zéèêûôùî]+)\.?\s+(\d{4})/.exec(t);
+    if (m && MOIS_FR[m[3]]) {
+      return SORTIES_BASE + '?du=' + isoDate(+m[4], MOIS_FR[m[3]], +m[1])
+                        + '&au=' + isoDate(+m[4], MOIS_FR[m[3]], +m[2]);
+    }
+    // "31 oct - 1 nov 2026" (cheval sur deux mois, voire deux années)
+    var m2 = /^(\d{1,2})(?:er)?\s+([a-zéèêûôùî]+)\.?\s*[-–]\s*(\d{1,2})(?:er)?\s+([a-zéèêûôùî]+)\.?\s+(\d{4})/.exec(t);
+    if (m2 && MOIS_FR[m2[2]] && MOIS_FR[m2[4]]) {
+      var y = +m2[5], mo1 = MOIS_FR[m2[2]], mo2 = MOIS_FR[m2[4]];
+      return SORTIES_BASE + '?du=' + isoDate(mo1 > mo2 ? y - 1 : y, mo1, +m2[1])
+                        + '&au=' + isoDate(y, mo2, +m2[3]);
+    }
+    return SORTIES_BASE;
+  }
+  document.getElementById('weekend').addEventListener('change', function() {
+    var opt = this.options[this.selectedIndex];
+    document.getElementById('sortiesLink').href =
+      opt && opt.dataset.label ? sortiesUrlFromLabel(opt.dataset.label) : SORTIES_BASE;
+  });
 
   loadWeekends();
 
