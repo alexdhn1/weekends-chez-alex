@@ -116,6 +116,27 @@
 
     .divider { height: 1px; background: linear-gradient(to right, transparent, #e0e0e0, transparent); margin: 20px 0; }
 
+    /* ---- Infos pratiques ---- */
+    .infos-pratiques {
+      background: #f4f9f6; border: 1px solid #dcefe3; border-radius: 12px;
+      padding: 14px 16px 16px; margin-bottom: 22px; font-size: 13.5px; color: #2d4a3e; line-height: 1.65;
+    }
+    .infos-pratiques .adresse { font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+    .infos-pratiques .trajet { color: #666; font-size: 12.5px; margin-bottom: 12px; }
+    .maps-links { display: flex; flex-wrap: wrap; gap: 8px; }
+    .maps-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #fff; border: 1.5px solid #cfe8da; border-radius: 20px;
+      padding: 8px 14px; font-size: 13px; font-weight: 700; color: #2d6a4f;
+      text-decoration: none; transition: background 0.2s, border-color 0.2s;
+    }
+    .maps-link:hover { background: #e8f5e9; border-color: #40916c; }
+    .maps-link:focus-visible { outline: 2px solid #40916c; outline-offset: 2px; }
+
+    body.is-mobile .infos-pratiques { font-size: 15px; }
+    body.is-mobile .infos-pratiques .trajet { font-size: 13px; }
+    body.is-mobile .maps-link { font-size: 14px; padding: 10px 16px; }
+
     /* ---- Formulaire ---- */
     .form-section-title { font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 16px; }
     .form-group { margin-bottom: 16px; }
@@ -315,6 +336,17 @@
         <span class="tag blue">👨‍👩‍👧‍👦 1 à 10 personnes</span>
         <span class="tag green">🍳 Petit dèj inclus</span>
         <span class="tag orange">🍴 Repas inclus</span>
+      </div>
+
+      <div class="section-title">📍 Infos pratiques</div>
+      <div class="infos-pratiques">
+        <div class="adresse">9 rue des Vendanges, 41400 Saint-Georges-sur-Cher</div>
+        <div class="trajet">À ~2h de Paris en voiture, gare de Saint-Georges-sur-Cher desservie depuis Tours.</div>
+        <div class="maps-links">
+          <a class="maps-link" href="https://www.google.com/maps/search/?api=1&query=9+rue+des+Vendanges+41400+Saint-Georges-sur-Cher" target="_blank" rel="noopener noreferrer">🗺️ Ouvrir dans Google Maps</a>
+          <a class="maps-link" href="https://maps.apple.com/?q=9+rue+des+Vendanges+41400+Saint-Georges-sur-Cher" target="_blank" rel="noopener noreferrer">🍎 Ouvrir dans Apple Plans</a>
+          <a class="maps-link" href="https://waze.com/ul?q=9%20rue%20des%20Vendanges%2041400%20Saint-Georges-sur-Cher" target="_blank" rel="noopener noreferrer">🚗 Ouvrir dans Waze</a>
+        </div>
       </div>
 
       <div class="divider"></div>
