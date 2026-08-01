@@ -2,65 +2,79 @@
  * ============================================================
  * Backend Apps Script — vacances.html (planning Alex & Jenna)
  * ============================================================
+ * Script STANDALONE : il n'est pas lié à un Sheet, il l'ouvre par ID
+ * (SPREADSHEET_ID ci-dessous). Ne jamais utiliser getActiveSpreadsheet()
+ * ici : elle renvoie null dans un script standalone.
  *
  * Installation : voir appscript/README.md
  *
- * Feuilles Google Sheet attendues :
- *  - "Events" (en-têtes en ligne 1) :
- *       A: id | B: dateStart | C: dateEnd | D: categorie | E: personne | F: note
- *    Créée automatiquement avec ses en-têtes si elle n'existe pas encore.
- *  - "Imported" (optionnelle, lecture seule, même structure que Events) :
- *       utilisée pour des événements importés depuis un calendrier externe
- *       (ex agenda partagé, ICS…). Si l'onglet n'existe pas, imported = [].
- *  - "Ponts" (en-têtes en ligne 1) :
- *       A: dateStart | B: dateEnd | C: note
- *    Gère les jours de pont / fermeture entreprise directement dans le
- *    Sheet (remplace le tableau PONTS_ALEX qui était hardcodé côté front,
- *    cf. A7 du PRD). Si l'onglet n'existe pas, ponts = [].
+ * Onglets utilisés dans le Sheet :
+ *  - "Vacances"     : événements saisis dans l'app
+ *       A: ID | B: Date début | C: Date fin | D: Catégorie | E: Personne | F: Note
+ *    Créé automatiquement avec ses en-têtes s'il n'existe pas.
+ *  - "Reservations" : lecture seule. Les weekends « Réservé » y sont
+ *    convertis en événements « Invités » (ou « Vacances » si le message
+ *    contient le mot vacances) affichés dans le planning.
+ *  - "Ponts"        : A: Date début | B: Date fin | C: Note
+ *    Remplace le tableau PONTS_ALEX qui était hardcodé côté front (A7).
+ *    Lance initPontsSheet() une fois pour le créer. Absent → ponts = [].
  *
- * Script Properties attendues (Extensions > Propriétés du projet
- * > Propriétés du script) :
- *   API_TOKEN : jeton partagé avec le front (constante API_TOKEN
- *               dans common.js, à synchroniser manuellement)
+ * Script Property attendue (⚙️ Paramètres du projet > Propriétés du script) :
+ *   API_TOKEN : jeton partagé avec le front (constante API_TOKEN de common.js)
  */
 
-var SHEET_EVENTS   = 'Events';
-var SHEET_IMPORTED = 'Imported';
-var SHEET_PONTS    = 'Ponts';
-var CATEGORIES_VALIDES = ['Libre', 'Alex', 'Jenna', 'Invités', 'Vacances', 'Pont'];
+var SPREADSHEET_ID = '1qhZMGj8knN8bS7A2t6eU3wRmZwcEM9WBap_b92gWLQ4';
+
+var SHEET_EVENTS       = 'Vacances';
+var SHEET_RESERVATIONS = 'Reservations';
+var SHEET_PONTS        = 'Ponts';
+
+var TIMEZONE = 'Europe/Paris';
+
+// Catégories acceptées par addEvent. « Invités » n'est pas saisissable :
+// elle est dérivée côté serveur depuis l'onglet Reservations.
+var CATEGORIES_VALIDES = ['Libre', 'Alex', 'Jenna', 'Vacances', 'Pont'];
+
+var MAX_LEN = { personne: 100, note: 1000 };
 
 // ------------------------------------------------------------
 // ROUTAGE
 // ------------------------------------------------------------
 function doGet(e) {
   try {
-    if (!checkToken(e.parameter && e.parameter.token)) {
+    if (!checkToken(e && e.parameter && e.parameter.token)) {
       return jsonResponse({ error: 'unauthorized' });
     }
     var action = e.parameter.action;
     if (action === 'getAll') {
       return jsonResponse({
         events:   getEvents(),
-        imported: getImported(),
+        imported: getImportedFromReservations(),
         ponts:    getPonts()
       });
     }
+    if (action === 'getEvents') {
+      return jsonResponse(getEvents());
+    }
     return jsonResponse({ error: 'unknown_action' });
   } catch (err) {
+    console.error('doGet error: ' + err);
     return jsonResponse({ error: 'server_error' });
   }
 }
 
 function doPost(e) {
   try {
-    var body = JSON.parse(e.postData.contents || '{}');
+    var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
     if (!checkToken(body.token)) {
       return jsonResponse({ success: false, message: 'Non autorisé.' });
     }
-    if (body.action === 'addEvent')    return addEvent(body);
-    if (body.action === 'deleteEvent') return deleteEvent(body);
+    if (body.action === 'addEvent')    return jsonResponse(addEvent(body));
+    if (body.action === 'deleteEvent') return jsonResponse(deleteEvent(body));
     return jsonResponse({ success: false, message: 'Action inconnue.' });
   } catch (err) {
+    // Ne JAMAIS renvoyer err.toString() au client (fuite d'info interne).
+    console.error('doPost error: ' + err);
     return jsonResponse({ success: false, message: 'Erreur serveur, réessaie plus tard.' });
   }
 }
@@ -74,72 +88,101 @@ function checkToken(token) {
 }
 
 // ------------------------------------------------------------
-// LECTURE
+// ACCÈS AU CLASSEUR (script standalone : openById obligatoire)
 // ------------------------------------------------------------
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
 function getEventsSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = getSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_EVENTS);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_EVENTS);
-    sheet.appendRow(['id', 'dateStart', 'dateEnd', 'categorie', 'personne', 'note']);
+    var headers = ['ID', 'Date début', 'Date fin', 'Catégorie', 'Personne', 'Note'];
+    var hr = sheet.getRange(1, 1, 1, headers.length);
+    hr.setValues([headers]);
+    hr.setFontWeight('bold');
+    hr.setBackground('#4a4a4a');
+    hr.setFontColor('#ffffff');
+    sheet.setFrozenRows(1);
   }
   return sheet;
 }
 
+// ------------------------------------------------------------
+// LECTURE — événements saisis dans l'app
+// ------------------------------------------------------------
 function getEvents() {
   var sheet = getEventsSheet();
-  var values = sheet.getDataRange().getValues();
+  var data = sheet.getDataRange().getValues();
   var out = [];
-  for (var i = 1; i < values.length; i++) {
-    var row = values[i];
-    if (!row[0]) continue;
+  for (var i = 1; i < data.length; i++) {
+    if (!data[i][0]) continue;
     out.push({
-      id:        String(row[0]),
-      dateStart: formatDate(row[1]),
-      dateEnd:   formatDate(row[2]),
-      categorie: String(row[3] || ''),
-      personne:  String(row[4] || ''),
-      note:      String(row[5] || '')
+      id:        String(data[i][0]),
+      dateStart: formatDate(data[i][1]),
+      dateEnd:   formatDate(data[i][2]),
+      categorie: String(data[i][3] || ''),
+      personne:  String(data[i][4] || ''),
+      note:      String(data[i][5] || '')
     });
   }
   return out;
 }
 
-function getImported() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_IMPORTED);
+// ------------------------------------------------------------
+// LECTURE — weekends réservés (onglet Reservations) convertis en
+// événements du planning. « nom » est utilisé par le front pour
+// afficher « Invités · <prénom> ».
+// ------------------------------------------------------------
+function getImportedFromReservations() {
+  var sheet = getSpreadsheet().getSheetByName(SHEET_RESERVATIONS);
   if (!sheet) return [];
-  var values = sheet.getDataRange().getValues();
-  var out = [];
-  for (var i = 1; i < values.length; i++) {
-    var row = values[i];
-    if (!row[1]) continue;
-    out.push({
-      id:        String(row[0] || 'imported-' + i),
-      dateStart: formatDate(row[1]),
-      dateEnd:   formatDate(row[2]),
-      categorie: String(row[3] || 'Invités'),
-      personne:  String(row[4] || ''),
-      note:      String(row[5] || '')
+
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+
+  for (var i = 1; i < data.length; i++) {
+    var statut  = data[i][3];
+    var message = (data[i][6] || '').toString().toLowerCase();
+    var label   = data[i][0];
+    var dStart  = data[i][1];
+    var dEnd    = data[i][2];
+    if (!dStart) continue;
+    if (statut !== 'Réservé') continue;
+
+    var categorie = message.indexOf('vacances') !== -1 ? 'Vacances' : 'Invités';
+
+    result.push({
+      id:        'import-' + i,
+      dateStart: formatDate(dStart),
+      dateEnd:   formatDate(dEnd || dStart),
+      categorie: categorie,
+      personne:  'Tous',
+      note:      String(label || ''),
+      nom:       data[i][4] ? String(data[i][4]) : '',
+      imported:  true
     });
   }
-  return out;
+  return result;
 }
 
-// Clé "ponts" (A7) : gérée directement dans l'onglet "Ponts" du Sheet.
-// Plus de tableau hardcodé côté front ; fallback = liste vide si
-// l'onglet n'existe pas encore.
+// ------------------------------------------------------------
+// LECTURE — ponts (A7). Plus de tableau hardcodé côté front ;
+// fallback = liste vide si l'onglet n'existe pas encore.
+// ------------------------------------------------------------
 function getPonts() {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PONTS);
+  var sheet = getSpreadsheet().getSheetByName(SHEET_PONTS);
   if (!sheet) return [];
-  var values = sheet.getDataRange().getValues();
+  var data = sheet.getDataRange().getValues();
   var out = [];
-  for (var i = 1; i < values.length; i++) {
-    var row = values[i];
-    if (!row[0]) continue;
+  for (var i = 1; i < data.length; i++) {
+    if (!data[i][0]) continue;
     out.push({
-      dateStart: formatDate(row[0]),
-      dateEnd:   formatDate(row[1] || row[0]),
-      note:      String(row[2] || '')
+      dateStart: formatDate(data[i][0]),
+      dateEnd:   formatDate(data[i][1] || data[i][0]),
+      note:      String(data[i][2] || '')
     });
   }
   return out;
@@ -148,36 +191,29 @@ function getPonts() {
 // ------------------------------------------------------------
 // INITIALISATION — à lancer UNE FOIS depuis l'éditeur Apps Script.
 // Crée l'onglet "Ponts" avec ses en-têtes s'il n'existe pas encore.
-// Remplace l'ancien tableau PONTS_ALEX hardcodé dans vacances.html :
-// les ponts s'éditent désormais directement dans cet onglet.
 // ------------------------------------------------------------
 function initPontsSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = getSpreadsheet();
   var sheet = ss.getSheetByName(SHEET_PONTS);
 
   if (sheet) {
-    SpreadsheetApp.getUi().alert(
-      'L\'onglet "' + SHEET_PONTS + '" existe déjà — rien à faire. ' +
-      'Ajoute tes ponts directement dedans.'
-    );
+    Logger.log('L\'onglet "' + SHEET_PONTS + '" existe déjà — rien à faire.');
     return;
   }
 
   sheet = ss.insertSheet(SHEET_PONTS);
   var headers = ['Date début', 'Date fin', 'Note'];
-  var headerRange = sheet.getRange(1, 1, 1, headers.length);
-  headerRange.setValues([headers]);
-  headerRange.setFontWeight('bold');
-  headerRange.setBackground('#2d4a3e');
-  headerRange.setFontColor('#ffffff');
+  var hr = sheet.getRange(1, 1, 1, headers.length);
+  hr.setValues([headers]);
+  hr.setFontWeight('bold');
+  hr.setBackground('#2d4a3e');
+  hr.setFontColor('#ffffff');
   sheet.getRange(2, 1, 200, 2).setNumberFormat('dd/mm/yyyy');
   sheet.setFrozenRows(1);
   sheet.autoResizeColumns(1, headers.length);
 
-  SpreadsheetApp.getUi().alert(
-    '✅ Onglet "' + SHEET_PONTS + '" créé. Ajoute une ligne par pont : ' +
-    'date de début, date de fin, note (ex. "Pont Ascension").'
-  );
+  Logger.log('✅ Onglet "' + SHEET_PONTS + '" créé. Ajoute une ligne par pont : ' +
+             'date de début, date de fin, note (ex. "Pont Ascension").');
 }
 
 // ------------------------------------------------------------
@@ -191,40 +227,47 @@ function addEvent(body) {
   var note      = String(body.note || '').trim();
 
   if (CATEGORIES_VALIDES.indexOf(categorie) === -1) {
-    return jsonResponse({ success: false, message: 'Catégorie invalide.' });
+    return { success: false, message: 'Catégorie invalide.' };
   }
-  if (!personne || personne.length > 100) {
-    return jsonResponse({ success: false, message: 'Nom invalide (max 100 caractères).' });
+  if (!personne || personne.length > MAX_LEN.personne) {
+    return { success: false, message: 'Nom invalide (max ' + MAX_LEN.personne + ' caractères).' };
   }
   if (!isValidDate(dateStart) || !isValidDate(dateEnd)) {
-    return jsonResponse({ success: false, message: 'Date invalide (format AAAA-MM-JJ attendu).' });
+    return { success: false, message: 'Date invalide (format AAAA-MM-JJ attendu).' };
   }
   if (dateEnd < dateStart) {
-    return jsonResponse({ success: false, message: 'La date de fin doit être après la date de début.' });
+    return { success: false, message: 'La date de fin doit être après la date de début.' };
   }
-  if (note.length > 1000) {
-    return jsonResponse({ success: false, message: 'Note trop longue (max 1000 caractères).' });
+  if (note.length > MAX_LEN.note) {
+    return { success: false, message: 'Note trop longue (max ' + MAX_LEN.note + ' caractères).' };
   }
 
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
   } catch (err) {
-    return jsonResponse({ success: false, message: 'Le service est occupé, réessaie dans quelques secondes.' });
+    console.error('LockService : verrou non obtenu — ' + err);
+    return { success: false, message: 'Le service est occupé, réessaie dans quelques secondes.' };
   }
 
   try {
     var sheet = getEventsSheet();
-    var id = Utilities.getUuid();
+    var id = 'evt-' + new Date().getTime();
+
+    // parseDate() construit une date locale (fuseau du script = Europe/Paris),
+    // ce qui évite le décalage d'un jour d'un new Date('AAAA-MM-JJ') en UTC.
     sheet.appendRow([
       id,
-      dateStart,
-      dateEnd,
+      parseDate(dateStart),
+      parseDate(dateEnd),
       sanitizeCell(categorie),
       sanitizeCell(personne),
       sanitizeCell(note)
     ]);
-    return jsonResponse({ success: true, message: 'Événement ajouté.', id: id });
+    sheet.getRange(sheet.getLastRow(), 2, 1, 2).setNumberFormat('dd/mm/yyyy');
+    SpreadsheetApp.flush();
+
+    return { success: true, message: 'Événement ajouté.', id: id };
   } finally {
     lock.releaseLock();
   }
@@ -236,26 +279,33 @@ function addEvent(body) {
 function deleteEvent(body) {
   var id = String(body.id || '');
   if (!id) {
-    return jsonResponse({ success: false, message: 'Identifiant manquant.' });
+    return { success: false, message: 'Identifiant manquant.' };
+  }
+  // Les événements importés sont dérivés de l'onglet Reservations :
+  // ils ne sont pas supprimables depuis le planning.
+  if (id.indexOf('import-') === 0) {
+    return { success: false, message: 'Un weekend réservé se modifie depuis la page de réservation.' };
   }
 
   var lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
   } catch (err) {
-    return jsonResponse({ success: false, message: 'Le service est occupé, réessaie dans quelques secondes.' });
+    console.error('LockService : verrou non obtenu — ' + err);
+    return { success: false, message: 'Le service est occupé, réessaie dans quelques secondes.' };
   }
 
   try {
     var sheet = getEventsSheet();
-    var values = sheet.getDataRange().getValues();
-    for (var i = 1; i < values.length; i++) {
-      if (String(values[i][0]) === id) {
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === id) {
         sheet.deleteRow(i + 1);
-        return jsonResponse({ success: true, message: 'Événement supprimé.' });
+        SpreadsheetApp.flush();
+        return { success: true, message: 'Événement supprimé.' };
       }
     }
-    return jsonResponse({ success: false, message: 'Événement introuvable (déjà supprimé ?).' });
+    return { success: false, message: 'Événement introuvable (déjà supprimé ?).' };
   } finally {
     lock.releaseLock();
   }
@@ -265,25 +315,37 @@ function deleteEvent(body) {
 // UTILITAIRES
 // ------------------------------------------------------------
 function isValidDate(s) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(s);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  var parts = s.split('-');
+  var y = parseInt(parts[0], 10);
+  var m = parseInt(parts[1], 10);
+  var d = parseInt(parts[2], 10);
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+  var probe = new Date(y, m - 1, d);
+  return probe.getFullYear() === y && probe.getMonth() === m - 1 && probe.getDate() === d;
 }
 
+/** 'AAAA-MM-JJ' → Date locale (pas UTC : évite le décalage d'un jour). */
+function parseDate(s) {
+  var parts = String(s).split('-');
+  return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+}
+
+/** Date (ou chaîne) → 'AAAA-MM-JJ' dans le fuseau du planning. */
 function formatDate(value) {
   if (!value) return '';
   if (Object.prototype.toString.call(value) === '[object Date]') {
-    var y = value.getFullYear();
-    var m = String(value.getMonth() + 1).padStart(2, '0');
-    var d = String(value.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + d;
+    return Utilities.formatDate(value, TIMEZONE, 'yyyy-MM-dd');
   }
   return String(value);
 }
 
-// Protection contre l'injection de formule dans le Sheet (=, +, -, @ en
-// tête de valeur).
+/** Protection contre l'injection de formule dans le Sheet (=, +, -, @). */
 function sanitizeCell(value) {
+  if (value === null || value === undefined) return '';
   var s = String(value);
-  if (/^[=+\-@]/.test(s)) return "'" + s;
+  if (s === '') return '';
+  if (/^[=+\-@\t\r]/.test(s)) return "'" + s;
   return s;
 }
 
